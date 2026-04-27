@@ -523,7 +523,7 @@
       <div class="schedule-card reveal" style="text-align: center">
         <span class="time-label">席設</span>
         <div class="time-val" style="margin-bottom: 5px">
-          香港兆基創意書院 一樓視藝室
+          香港兆基創意書院 圖書館及一樓視藝室
         </div>
         <div style="font-size: 0.9rem; color: #a5a5a5">九龍城聯合道135號</div>
 
@@ -653,7 +653,13 @@
       </footer>
     </div>
 
-    <script>
+    <script type="module">
+      import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+      const SUPABASE_URL = 'https://wkzynwhhebgrrutqfvsq.supabase.co';
+      const SUPABASE_KEY = 'sb_publishable_x7wW5bd2VMRKxNpu-tbkvg_kQ55Ou4j';
+      const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
       // --- 載入畫面邏輯 ---
       window.addEventListener('load', () => {
         setTimeout(() => {
@@ -754,13 +760,34 @@
       }
 
       // --- 留言提交 ---
-      function submitNote() {
-        const text = document.getElementById('note').value;
-        if (text) {
-          alert('感悟已悄然存入。感謝您的參與。');
-          document.getElementById('note').value = '';
+      async function submitNote() {
+        const noteInput = document.getElementById('note');
+        const text = noteInput.value.trim();
+        if (!text) {
+          alert('請先輸入您的感悟，再提交。');
+          return;
         }
+
+        const { error } = await supabase.from('messages').insert([
+          {
+            content: text,
+            author_name: '訪客',
+          },
+        ]);
+
+        if (error) {
+          console.error(error);
+          alert('提交失敗，請稍後再試。');
+          return;
+        }
+
+        noteInput.value = '';
+        alert('感悟已成功存入 Supabase，感謝您的參與。');
       }
+
+      window.openModal = openModal;
+      window.closeModal = closeModal;
+      window.submitNote = submitNote;
     </script>
   </body>
 </html>
