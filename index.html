@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <title>虛舟 · 茶會名錄</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #050607;
+        --accent: #c4a47c;
+        --text: #d8d8d8;
+        --soft-white: #f4f4f4;
+      }
+      * {
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      body {
+        background-color: var(--bg);
+        color: var(--text);
+        font-family: 'Noto Serif TC', serif;
+        margin: 0;
+        line-height: 1.8;
+        -webkit-font-smoothing: antialiased;
+        font-size: 16px;
+        overflow-x: hidden;
+      }
+
+      /* ✨ 載入畫面 (Loading Screen) - 自動過渡 */
+      #loader {
+        position: fixed;
+        inset: 0;
+        background-color: var(--bg);
+        z-index: 9999;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        transition: opacity 1.5s ease-in-out;
+      }
+      .loader-text {
+        color: var(--accent);
+        font-size: 1.2rem;
+        letter-spacing: 0.5em;
+        text-indent: 0.5em;
+        opacity: 0;
+        animation: fadeInOut 2.5s forwards;
+        font-weight: 300;
+      }
+      @keyframes fadeInOut {
+        0% {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        40% {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        80% {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        100% {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+      }
+
+      /* ✨ 特效：跟隨鼠標的柔和光暈 (已增強明顯度) */
+      .cursor-glow {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 450px;
+        height: 450px;
+        background: radial-gradient(
+          circle,
+          rgba(196, 164, 124, 0.18) 0%,
+          rgba(196, 164, 124, 0) 65%
+        );
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 0;
+        mix-blend-mode: screen;
+      }
+
+      .container,
+      header,
+      section,
+      .interactive-card,
+      .credits-section {
+        position: relative;
+        z-index: 10;
+      }
+
+      .progress-bar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 3px;
+        background: var(--accent);
+        z-index: 1000;
+        width: 0%;
+        transition: width 0.1s;
+      }
+      .container {
+        max-width: 500px;
+        margin: 0 auto;
+        padding: 60px 25px;
+      }
+
+      .reveal {
+        opacity: 0;
+        transform: translateY(30px);
+        transition: all 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      .reveal.active {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      header {
+        text-align: center;
+        margin-bottom: 70px;
+        padding-top: 20px;
+      }
+      .theme-sub {
+        font-size: 0.85rem;
+        letter-spacing: 0.6em;
+        color: var(--accent);
+        opacity: 0.8;
+        margin-bottom: 15px;
+      }
+
+      h1 {
+        font-size: 2.4em;
+        font-weight: 300;
+        letter-spacing: 0.4em;
+        margin: 0;
+        text-indent: 0.4em;
+        background: linear-gradient(
+          120deg,
+          var(--accent) 0%,
+          #fff 40%,
+          var(--accent) 80%
+        );
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: textShine 8s linear infinite;
+      }
+      @keyframes textShine {
+        to {
+          background-position: 200% center;
+        }
+      }
+
+      .zen-section {
+        margin-bottom: 80px;
+        text-align: center;
+      }
+      .quote-main {
+        font-size: 1.15rem;
+        color: var(--soft-white);
+        line-height: 2.2;
+        margin-bottom: 30px;
+        letter-spacing: 0.1em;
+      }
+      .intro-text {
+        text-align: justify;
+        font-size: 1rem;
+        color: #a5a5a5;
+      }
+
+      .schedule-card {
+        background: rgba(196, 164, 124, 0.03);
+        border: 1px solid rgba(196, 164, 124, 0.15);
+        padding: 35px 25px;
+        margin-bottom: 30px;
+        text-align: center;
+      }
+      .schedule-item {
+        margin-bottom: 20px;
+        border-bottom: 1px dashed rgba(196, 164, 124, 0.2);
+        padding-bottom: 15px;
+      }
+      .schedule-item:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+      }
+      .time-label {
+        display: block;
+        font-size: 0.85rem;
+        color: var(--accent);
+        letter-spacing: 0.3em;
+        opacity: 0.9;
+        margin-bottom: 8px;
+        font-weight: 500;
+      }
+      .time-val {
+        font-size: 1.1rem;
+        color: var(--soft-white);
+        letter-spacing: 0.1em;
+      }
+
+      .guide-list {
+        text-align: justify;
+        padding-left: 20px;
+        color: #b5b5b5;
+        font-size: 0.95rem;
+        line-height: 2;
+        margin-top: 15px;
+      }
+      .guide-list li {
+        margin-bottom: 10px;
+      }
+      .guide-list li::marker {
+        color: var(--accent);
+      }
+
+      .section-title {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 60px 0 40px;
+        color: var(--accent);
+        letter-spacing: 0.4em;
+        font-size: 1.25rem;
+        font-weight: 500;
+      }
+      .section-title::before,
+      .section-title::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: rgba(196, 164, 124, 0.3);
+        margin: 0 15px;
+      }
+
+      .item-card {
+        margin-bottom: 50px;
+        border-bottom: 1px solid rgba(196, 164, 124, 0.1);
+        padding-bottom: 30px;
+      }
+      .item-name {
+        font-size: 1.3rem;
+        color: var(--accent);
+        margin-bottom: 12px;
+        font-weight: 500;
+      }
+      .item-desc {
+        font-size: 1rem;
+        color: #c0c0c0;
+        text-align: justify;
+      }
+
+      .item-note {
+        font-size: 0.95rem;
+        color: #f8e5cc;
+        background: rgba(196, 164, 124, 0.12);
+        border: 1px solid rgba(196, 164, 124, 0.5);
+        padding: 18px 15px;
+        text-align: center;
+        margin: -20px auto 50px;
+        letter-spacing: 0.1em;
+        border-radius: 4px;
+      }
+
+      .interactive-card {
+        background: rgba(196, 164, 124, 0.03);
+        border: 1px solid rgba(196, 164, 124, 0.2);
+        padding: 35px 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+        transform: translateY(0);
+      }
+      .interactive-card:hover {
+        background: rgba(196, 164, 124, 0.08);
+        border-color: rgba(196, 164, 124, 0.6);
+        transform: translateY(-6px);
+        box-shadow: 0 12px 24px rgba(196, 164, 124, 0.08);
+      }
+      .interactive-card h3 {
+        font-size: 1.25rem;
+        color: var(--soft-white);
+        margin: 0 0 10px 0;
+        letter-spacing: 0.3em;
+        font-weight: 500;
+      }
+      .click-hint {
+        font-size: 0.85rem;
+        color: var(--accent);
+        opacity: 0.7;
+        letter-spacing: 0.2em;
+        margin: 0;
+        transition: opacity 0.3s;
+      }
+      .interactive-card:hover .click-hint {
+        opacity: 1;
+      }
+
+      .credits-section {
+        text-align: center;
+        margin-top: 40px;
+        padding: 0 10px;
+      }
+      .credits-group {
+        margin-bottom: 35px;
+      }
+      .credits-role {
+        color: var(--accent);
+        font-size: 0.9rem;
+        letter-spacing: 0.2em;
+        margin-bottom: 8px;
+        opacity: 0.9;
+        font-weight: 500;
+      }
+      .credits-names {
+        color: var(--soft-white);
+        font-size: 1rem;
+        letter-spacing: 0.05em;
+        line-height: 1.8;
+      }
+
+      #exhibit-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(3, 3, 3, 0.95);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        z-index: 3000;
+        display: none;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        opacity: 0;
+        transition: opacity 0.8s ease;
+        padding: 30px;
+      }
+      .modal-poem {
+        font-style: italic;
+        color: var(--accent);
+        font-size: 1.2rem;
+        line-height: 2.2;
+        text-align: center;
+        opacity: 0;
+        transform: translateY(20px);
+        transition: all 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+        margin-bottom: 40px;
+      }
+      .modal-desc {
+        font-size: 1rem;
+        color: #b5b5b5;
+        text-align: justify;
+        line-height: 2;
+        opacity: 0;
+        transform: translateY(20px);
+        transition: all 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+        max-width: 400px;
+        border-top: 1px dashed rgba(196, 164, 124, 0.3);
+        padding-top: 30px;
+      }
+      .modal-poem.show,
+      .modal-desc.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      .btn-outline {
+        margin-top: 50px;
+        border: 1px solid var(--accent);
+        color: var(--accent);
+        padding: 12px 45px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        letter-spacing: 0.3em;
+        background: transparent;
+        transition: 0.3s;
+      }
+      .btn-outline:hover {
+        background: var(--accent);
+        color: var(--bg);
+      }
+      .btn-close-modal {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .btn-close-modal.show {
+        opacity: 0.9;
+        pointer-events: auto;
+      }
+
+      footer {
+        margin-top: 80px;
+        text-align: center;
+        padding-bottom: 60px;
+      }
+      .input-area {
+        width: 100%;
+        border-top: 1px solid rgba(196, 164, 124, 0.2);
+        padding-top: 40px;
+      }
+      textarea {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(196, 164, 124, 0.4);
+        color: #fff;
+        padding: 15px;
+        font-family: inherit;
+        font-size: 1rem;
+        min-height: 100px;
+        outline: none;
+        margin-bottom: 20px;
+        border-radius: 4px;
+        transition: 0.3s;
+      }
+      textarea:focus {
+        border-color: var(--accent);
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .btn-submit {
+        background: var(--accent);
+        color: #000;
+        border: none;
+        padding: 14px 60px;
+        font-size: 1rem;
+        letter-spacing: 0.3em;
+        cursor: pointer;
+        transition: 0.3s;
+        font-weight: 500;
+      }
+      .btn-submit:hover {
+        transform: scale(1.05);
+        box-shadow: 0 5px 15px rgba(196, 164, 124, 0.2);
+      }
+
+      @media (max-width: 480px) {
+        .container {
+          padding: 40px 20px;
+        }
+        h1 {
+          font-size: 2.1em;
+        }
+        .section-title {
+          font-size: 1.15rem;
+        }
+        .cursor-glow {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="loader">
+      <div class="loader-text">向也虛而今也實</div>
+    </div>
+
+    <div class="cursor-glow" id="cursorGlow"></div>
+    <div class="progress-bar" id="progress"></div>
+
+    <div id="exhibit-modal">
+      <div class="modal-poem" id="modal-poem"></div>
+      <div class="modal-desc" id="modal-desc"></div>
+      <button
+        class="btn-outline btn-close-modal"
+        id="modal-close"
+        onclick="closeModal()"
+      >
+        返回
+      </button>
+    </div>
+
+    <div class="container">
+      <header class="reveal">
+        <div class="theme-sub">THE EMPTY BOAT</div>
+        <h1>虛舟茶會</h1>
+        <div class="theme-sub" style="margin-top: 15px; opacity: 0.5">
+          暨香港兆基創意書院學生繪畫、花器作品展
+        </div>
+      </header>
+
+      <section class="zen-section reveal">
+        <div class="quote-main">
+          「向也不怒而今也怒，向也虛而今也實。<br />人能虛己以遊世，其孰能害之！」
+        </div>
+        <div class="intro-text">
+          《莊子．山木》中寫一條空船，說明了「虛己以遊世」的心法。時時讓自己的心留有空間，保持開放，就是暢遊於亂世的秘訣。本年度茶會也借這條「虛舟」的意象作主題，香港兆基創意書院同學們設計了一系列茶席體驗，引領一場「虛而往，實而歸」的五感旅程。
+        </div>
+      </section>
+
+      <div class="section-title reveal">茶會時程</div>
+      <div class="schedule-card reveal">
+        <div class="schedule-item">
+          <span class="time-label">良辰</span>
+          <div class="time-val">二零二六年五月二日及五月三日</div>
+        </div>
+        <div class="schedule-item">
+          <span class="time-label">晨曦 · 習茶</span>
+          <div class="time-val">每日 1000 - 1200</div>
+        </div>
+        <div class="schedule-item">
+          <span class="time-label">午後 · 虛往</span>
+          <div class="time-val">每日 1400 - 1500</div>
+        </div>
+        <div class="schedule-item">
+          <span class="time-label">暮色 · 實歸</span>
+          <div class="time-val">每日 1530 - 1630</div>
+        </div>
+      </div>
+
+      <div class="section-title reveal">赴會指引</div>
+      <div class="schedule-card reveal" style="text-align: center">
+        <span class="time-label">席設</span>
+        <div class="time-val" style="margin-bottom: 5px">
+          香港兆基創意書院 一樓視藝室
+        </div>
+        <div style="font-size: 0.9rem; color: #a5a5a5">九龍城聯合道135號</div>
+
+        <div
+          style="
+            margin-top: 30px;
+            border-top: 1px dashed rgba(196, 164, 124, 0.2);
+            padding-top: 20px;
+          "
+        >
+          <span class="time-label">席間須知</span>
+          <ul class="guide-list">
+            <li>為免干擾品茗時的茶香，懇請賓客撥冗免用濃烈香水。</li>
+            <li>建議穿著寬鬆舒適、色調柔和之服裝，以利放鬆身心。</li>
+            <li>茶會期間請將手機調至靜音，與我們一同享受當下。</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="reveal" style="text-align: center; margin-bottom: 80px">
+        <button
+          class="btn-submit"
+          onclick="window.open('https://docs.google.com/forms/d/e/1FAIpQLSfEWYKEF4hSZzpeUgVFmPrSIZn7wbsw-56mp9q1ZdwRVYqg8w/viewform?pli=1', '_blank')"
+        >
+          預約入席
+        </button>
+      </div>
+
+      <div class="section-title reveal">席間品茗</div>
+      <div class="item-card reveal">
+        <div class="item-name">第一道：武夷正岩肉桂</div>
+        <div class="item-desc">
+          以高銳香氣見長，具豐郁花果酸甜氣息，韻底略帶肉桂辛香氣息。清竅醒神，可助賓主話興。
+        </div>
+      </div>
+      <div class="item-card reveal">
+        <div class="item-name">第二道：武夷正岩水仙</div>
+        <div class="item-desc">
+          以醇厚湯體見長，甜度較高，帶沉穩的木質調及幽雅蘭香。安神寧心，易應自然之美。
+        </div>
+      </div>
+      <div class="item-note reveal">
+        * 部分茶品會因應司茶人的茶席體驗設計而有所調動。
+      </div>
+
+      <div class="section-title reveal">茗賞為上</div>
+      <div class="interactive-card reveal" onclick="openModal('flower')">
+        <h3>花器作品展</h3>
+        <p class="click-hint">點擊觀賞作品意象</p>
+      </div>
+
+      <div class="section-title reveal">俯仰有時</div>
+      <div class="interactive-card reveal" onclick="openModal('painting')">
+        <h3>繪畫作品展</h3>
+        <p class="click-hint">點擊觀賞作品意象</p>
+      </div>
+
+      <div class="section-title reveal">射以觀德</div>
+      <div class="interactive-card reveal" onclick="openModal('archery')">
+        <h3>投壺體驗區</h3>
+        <p class="click-hint">點擊觀賞作品意象</p>
+      </div>
+
+      <div class="section-title reveal">執事名錄</div>
+      <div class="credits-section reveal">
+        <div class="credits-group">
+          <div class="credits-role">繪畫展策劃及司茶</div>
+          <div class="credits-names">羅心依、盧芷欣、鄭浩澧、趙碩謙</div>
+        </div>
+        <div class="credits-group">
+          <div class="credits-role">花器展策劃及司茶</div>
+          <div class="credits-names">
+            李曉柔、林卓希、鄧凱蔓、楊泆楠、馮翎雨
+          </div>
+        </div>
+        <div class="credits-group">
+          <div class="credits-role">茶席互動設計及司茶</div>
+          <div class="credits-names">
+            羅然禧、馮翎雨、周立濤、鍾宛純、蘇凱恩
+          </div>
+        </div>
+        <div class="credits-group">
+          <div class="credits-role">視覺設計</div>
+          <div class="credits-names">
+            海報設計：鄧鎧琪<br />電子茶帖設計：羅然禧
+          </div>
+        </div>
+        <div class="credits-group">
+          <div class="credits-role">行政及文案</div>
+          <div class="credits-names">
+            行政：陳美廷<br />文案：江禕禔、何健欣老師
+          </div>
+        </div>
+        <div class="credits-group">
+          <div class="credits-role">茶學訓練與監督</div>
+          <div class="credits-names">
+            訓練助教：胡展豪、吳昕穎<br />茶席監督：鄭浩憫、鄭浩澧
+          </div>
+        </div>
+        <div class="credits-group" style="margin-bottom: 0">
+          <div class="credits-role">顧問老師</div>
+          <div class="credits-names">
+            劉錦虹老師（繪畫展）<br />施美婷老師（花器展）<br />何健欣老師（茶席）
+          </div>
+        </div>
+      </div>
+
+      <footer class="reveal">
+        <div class="input-area">
+          <div class="theme-sub" style="margin-bottom: 20px">留存感悟</div>
+          <textarea
+            id="note"
+            placeholder="在一席茶的時間裡，您感受了什麼？"
+          ></textarea>
+          <button class="btn-submit" onclick="submitNote()">存入席誌</button>
+        </div>
+        <p
+          style="
+            font-size: 0.8rem;
+            opacity: 0.5;
+            margin-top: 40px;
+            letter-spacing: 0.1em;
+          "
+        >
+          © 2026 香港兆基創意書院 虛舟茶會
+        </p>
+      </footer>
+    </div>
+
+    <script>
+      // --- 載入畫面邏輯 ---
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          const loader = document.getElementById('loader');
+          loader.style.opacity = '0';
+          setTimeout(() => {
+            loader.style.display = 'none';
+          }, 1500);
+        }, 2000);
+      });
+
+      // --- 鼠標光暈 ---
+      const cursorGlow = document.getElementById('cursorGlow');
+      let mouseX = window.innerWidth / 2,
+        mouseY = window.innerHeight / 2;
+      let glowX = mouseX,
+        glowY = mouseY;
+      window.addEventListener('mousemove', (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+      });
+      function animateGlow() {
+        glowX += (mouseX - glowX) * 0.05;
+        glowY += (mouseY - glowY) * 0.05;
+        cursorGlow.style.transform = `translate(${glowX}px, ${glowY}px) translate(-50%, -50%)`;
+        requestAnimationFrame(animateGlow);
+      }
+      animateGlow();
+
+      // --- 滾動浮現與進度條 ---
+      function reveal() {
+        var reveals = document.querySelectorAll('.reveal');
+        for (var i = 0; i < reveals.length; i++) {
+          var windowHeight = window.innerHeight;
+          var elementTop = reveals[i].getBoundingClientRect().top;
+          if (elementTop < windowHeight - 100) {
+            reveals[i].classList.add('active');
+          }
+        }
+      }
+      window.addEventListener('scroll', reveal);
+      window.onload = reveal;
+
+      window.onscroll = function () {
+        let winScroll =
+          document.body.scrollTop || document.documentElement.scrollTop;
+        let height =
+          document.documentElement.scrollHeight -
+          document.documentElement.clientHeight;
+        let scrolled = (winScroll / height) * 100;
+        document.getElementById('progress').style.width = scrolled + '%';
+        reveal();
+      };
+
+      // --- 彈窗資料與邏輯 ---
+      const exhibitData = {
+        flower: {
+          poem: '它們在空氣裏親熱<br>罅隙中輕聲細語<br>透露它們行走的軌跡',
+          desc: '席上花器是混合媒體工作室（Mix-Media Studio）同學作品。同學參考明代袁宏道《瓶史》中對花器基本要求，再加入自身的研究及思考，完成作品。來賓可在茶席上與瓶花相對，看看同學如何邀請自然入席，實踐袁宏道「茗賞者，上也」的境界。',
+        },
+        painting: {
+          poem: '在畫紙底下某個角落<br>留下不起眼的影<br>浮光忽略永恆的一瞬',
+          desc: '於一樓視藝室，設有繪畫工作室（Painting & Drawing Studio）的同學作品展覽。概念源於日式茶室的「床之間」，賓主可於席間用比較舒徐的節奏和心情，觀看畫作。',
+        },
+        archery: {
+          poem: "<span style='font-size:0.9rem;opacity:0.7;display:block;margin-bottom:15px;letter-spacing:0.2em;'>《禮記：射義》</span>「射求正諸己，己正而後發；<br>發而不中，則不怨勝己者，<br>反求諸己而已矣。」",
+          desc: '射藝是古時君子六藝之一，後來發展出的「投壺」是其簡化版。「射」不是只求技術準確，更是用射禮來涵養德行。同學認為古人習射，其精神也與現今習茶相通，希望來賓可從投壺與品茶中，體驗「修正身心」的效果。',
+        },
+      };
+
+      function openModal(type) {
+        const modal = document.getElementById('exhibit-modal');
+        const poemEl = document.getElementById('modal-poem');
+        const descEl = document.getElementById('modal-desc');
+        const closeBtn = document.getElementById('modal-close');
+
+        poemEl.classList.remove('show');
+        descEl.classList.remove('show');
+        closeBtn.classList.remove('show');
+        poemEl.innerHTML = exhibitData[type].poem;
+        descEl.innerHTML = exhibitData[type].desc;
+
+        document.body.style.overflow = 'hidden';
+        modal.style.display = 'flex';
+        setTimeout(() => (modal.style.opacity = '1'), 10);
+        setTimeout(() => poemEl.classList.add('show'), 600);
+        setTimeout(() => descEl.classList.add('show'), 2000);
+        setTimeout(() => closeBtn.classList.add('show'), 2800);
+      }
+
+      function closeModal() {
+        const modal = document.getElementById('exhibit-modal');
+        modal.style.opacity = '0';
+        document.body.style.overflow = 'auto';
+        setTimeout(() => {
+          modal.style.display = 'none';
+        }, 800);
+      }
+
+      // --- 留言提交 ---
+      function submitNote() {
+        const text = document.getElementById('note').value;
+        if (text) {
+          alert('感悟已悄然存入。感謝您的參與。');
+          document.getElementById('note').value = '';
+        }
+      }
+    </script>
+  </body>
+</html>
